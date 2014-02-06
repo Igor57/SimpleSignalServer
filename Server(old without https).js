@@ -1,12 +1,7 @@
 var static = require('node-static');
-var fs = require('fs');
-var options = {
-    key: fs.readFileSync("server.key"), // путь к ключу
-    cert: fs.readFileSync("server.crt") // путь к сертификату
-};
-var https = require('https');
+var http = require('http');
 var file = new(static.Server)();
-var app = https.createServer(options,function (req, res) {
+var app = http.createServer(function (req, res) {
 	file.serve(req, res);
 }).listen(1234);
 
