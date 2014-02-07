@@ -6,21 +6,26 @@
     html { height: 100%; }
     body { height: 100%; margin: 0; background: #111; text-align: center; }
 </style>
-
-</head>
-		<!--
+<!--
+		<title>Remote</title>
+		<script src="http://192.168.1.35:8080/socket.io/socket.io.js"></script> 
 		<script src="client.js"></script>
 		-->
+</head>
+
+<script src="/socket.io/socket.io.js"></script>
+		<!--<body>
+	
 		<applet code="JsToJava.class" 
         name="JsToJava" 
         mayscript 
         width="100%"
         height=50>
 		</applet>
+		
 
-
-<script src="/socket.io/socket.io.js"></script>
-
+	</body>
+	-->
 <script>
 var PeerConnection = window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
 var IceCandidate = window.mozRTCIceCandidate || window.RTCIceCandidate;
@@ -95,17 +100,6 @@ function gotIceCandidate(event){
 // Socket.io
 
 var socket = io.connect('', {port: 1234});
-var socket2 = io.connect('', {port: 8080});
-//var socket2 = io.connect('http://192.168.1.35:8080');
-
-	socket2.on('connect', function () {
-		socket2.on('message', function (msg) {
-			// Добавим информацию в апплет
-			//alert('тест приема  '+ msg);
-			document.applets.JsToJava.updateField(msg);
-		});
-		
-	});
 
 function sendMessage(message){
   socket.emit('message', message);

@@ -1,93 +1,4 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style type="text/css">
-    html { height: 100%; }
-    body { height: 100%; margin: 0; background: #111; text-align: left; }
-    #remoteVideo { position: absolute; left: 0% ; height: 100%; width: 100%; background: #000; }
-    #callButton { position: absolute; display: none; left: 50%; font-size: 2em; bottom: 5%; border-radius: 1em; }
-  </style>
-</head>
-
-<script src="/socket.io/socket.io.js"></script>
-
-<video id="remoteVideo" autoplay></video>
-<button id="callButton" onclick="createOffer()">start</button>
-
-
-<script>
-var PeerConnection = window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
-var IceCandidate = window.mozRTCIceCandidate || window.RTCIceCandidate;
-var SessionDescription = window.mozRTCSessionDescription || window.RTCSessionDescription;
-navigator.getUserMedia = navigator.getUserMedia || navigator.mozGetUserMedia || navigator.webkitGetUserMedia;
-
-var pc; // PeerConnection
-// Step 1. getUserMedia
-navigator.getUserMedia(
-  { audio: true, video:false}, 
-  gotStream, 
-  function(error) { console.log(error) }
-);
-
-
-
-function gotStream(stream) {
-  document.getElementById("callButton").style.display = 'inline-block';
-
-  pc = new PeerConnection(null);
-  pc.addStream(stream);
-  pc.onicecandidate = gotIceCandidate;
-  pc.onaddstream = gotRemoteStream;
-}
-
-
-// Step 2. createOffer
-function createOffer() {
-  pc.createOffer(
-    gotLocalDescription, 
-    function(error) { console.log(error) }, 
-    { 'mandatory': { 'OfferToReceiveAudio': false, 'OfferToReceiveVideo': true } }
-  );
-}
-
-
-// Step 3. createAnswer
-function createAnswer() {
-  pc.createAnswer(
-    gotLocalDescription,
-    function(error) { console.log(error) }, 
-    { 'mandatory': { 'OfferToReceiveAudio': false, 'OfferToReceiveVideo': true } }
-  );
-}
-
-
-function gotLocalDescription(description){
-  pc.setLocalDescription(description);
-  sendMessage(description);
-}
-
-function gotIceCandidate(event){
-  if (event.candidate) {
-    sendMessage({
-      type: 'candidate',
-      label: event.candidate.sdpMLineIndex,
-      id: event.candidate.sdpMid,
-      candidate: event.candidate.candidate
-    });
-  }
-}
-
-function gotRemoteStream(event){
-  document.getElementById("remoteVideo").src = URL.createObjectURL(event.stream);
-}
-
-
-////////////////////////////////////////////////
-// Socket.io
-
-var socket = io.connect('', {port: 1234});
-var socket2 = io.connect('', {port: 8080});
+window.onload = function() {
 
 var keyMap =
 {
@@ -215,18 +126,25 @@ var keyMap =
 
 };
 
-	socket2.on('connect', function () {
+
+	// Создаем соединение с сервером; websockets почему-то в Хроме не работают, используем xhr (проверить!!!!!!!!!!!!)
+	if (navigator.userAgent.toLowerCase().indexOf('chrome') != -1) {
+		socket = io.connect('http://localhost:8080', {'transports': ['xhr-polling']});
+	} else {
+		socket = io.connect('http://localhost:8080');
+	}
+	socket.on('connect', function () {
 	
 		document.onmousemove = function(e) {
-		  socket2.send(escape('mouseMove'+':'+e.pageX+':'+e.pageY));
+		  socket.send(escape('mouseMove'+':'+e.pageX+':'+e.pageY));
 		}
 		
 		document.onmousedown = function(e) {
-		  socket2.send(escape('onMouseDown'+':'+e.button));
+		  socket.send(escape('onMouseDown'+':'+e.button));
 		}
 		
 		document.onmouseup = function(e) {
-		  socket2.send(escape('onMouseUp'+':'+e.button));
+		  socket.send(escape('onMouseUp'+':'+e.button));
 		}
 		
 	
@@ -241,14 +159,14 @@ var keyMap =
 			{
 			var command = 'Unknown symbol';
 			}
-			socket2.send(escape(command));
+			socket.send(escape(command));
 		//alert('pressed keyCode\"'+e.which+'\"+keySymbol\"'+simvol+'\"')
 		}
 		
 		document.onkeydown = function(e) {
 			if (e.which<65)
 			{
-			socket2.send(escape('KeyCode:'+e.which));
+			socket.send(escape('KeyCode:'+e.which));
 			}
 		}
 		
@@ -275,7 +193,7 @@ var keyMap =
 				var delta=evt.detail? evt.detail*(-120) : evt.wheelDelta; //check for detail first so Opera uses that instead of wheelDelta
 				var direction='none';
 				if (delta<0){direction='Down';}else{direction='Up';}
-				socket2.send(escape('onWheel'+':'+direction));
+				socket.send(escape('onWheel'+':'+direction));
 				}
 			 
 				var mousewheelevt=(/Firefox/i.test(navigator.userAgent))? "DOMMouseScroll" : "mousewheel" //FF doesn't recognize mousewheel as of FF3.x 
@@ -290,23 +208,5 @@ var keyMap =
 		
 	});
 
-function sendMessage(message){
-  socket.emit('message', message);
-}
+};
 
-socket.on('message', function (message){
-  if (message.type === 'offer') {
-    pc.setRemoteDescription(new SessionDescription(message));
-    createAnswer();
-  } 
-  else if (message.type === 'answer') {
-    pc.setRemoteDescription(new SessionDescription(message));
-  } 
-  else if (message.type === 'candidate') {
-    var candidate = new IceCandidate({sdpMLineIndex: message.label, candidate: message.candidate});
-    pc.addIceCandidate(candidate);
-  }
-});
-
-</script>
-</html>

@@ -4,22 +4,22 @@
   <meta charset="UTF-8">
   <style type="text/css">
     html { height: 100%; }
-    body { height: 100%; margin: 0; background: #111; text-align: center; }
-</style>
-
-</head>
-		<!--
-		<script src="client.js"></script>
+    body { height: 100%; margin: 0; background: #111; text-align: left; }
+    #remoteVideo { position: absolute; left: 0% ; height: 100%; width: 100%; background: #000; }
+    #callButton { position: absolute; display: none; left: 50%; font-size: 2em; bottom: 5%; border-radius: 1em; }
+  </style>
+  <!--
+  		<title>Remote</title>
+		<script src="http://localhost:8080/socket.io/socket.io.js"></script>
+		<script src="serverToClient.js"></script>
 		-->
-		<applet code="JsToJava.class" 
-        name="JsToJava" 
-        mayscript 
-        width="100%"
-        height=50>
-		</applet>
-
+</head>
 
 <script src="/socket.io/socket.io.js"></script>
+
+<video id="remoteVideo" autoplay></video>
+<button id="callButton" onclick="createOffer()">start</button>
+
 
 <script>
 var PeerConnection = window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
@@ -28,28 +28,22 @@ var SessionDescription = window.mozRTCSessionDescription || window.RTCSessionDes
 navigator.getUserMedia = navigator.getUserMedia || navigator.mozGetUserMedia || navigator.webkitGetUserMedia;
 
 var pc; // PeerConnection
-
-            var screen_constraints = {
-                mandatory: {
-                       chromeMediaSource: 'screen',
-					    maxWidth: 1280,
-            maxHeight: 720,
-            minWidth: 1280,
-            minHeight: 720
-                },
-                optional: []
-            };
 // Step 1. getUserMedia
 navigator.getUserMedia(
-  { audio: false, video: screen_constraints }, 
+  { audio: true, video:false}, 
   gotStream, 
   function(error) { console.log(error) }
 );
 
+
+
 function gotStream(stream) {
+  document.getElementById("callButton").style.display = 'inline-block';
+
   pc = new PeerConnection(null);
   pc.addStream(stream);
   pc.onicecandidate = gotIceCandidate;
+  pc.onaddstream = gotRemoteStream;
 }
 
 
@@ -89,23 +83,15 @@ function gotIceCandidate(event){
   }
 }
 
+function gotRemoteStream(event){
+  document.getElementById("remoteVideo").src = URL.createObjectURL(event.stream);
+}
 
 
 ////////////////////////////////////////////////
 // Socket.io
 
 var socket = io.connect('', {port: 1234});
-var socket2 = io.connect('', {port: 8080});
-//var socket2 = io.connect('http://192.168.1.35:8080');
-
-	socket2.on('connect', function () {
-		socket2.on('message', function (msg) {
-			// Добавим информацию в апплет
-			//alert('тест приема  '+ msg);
-			document.applets.JsToJava.updateField(msg);
-		});
-		
-	});
 
 function sendMessage(message){
   socket.emit('message', message);
