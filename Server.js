@@ -5,7 +5,8 @@ var options = {
     cert: fs.readFileSync("server.crt") // путь к сертификату
 };
 var https = require('https');
-var file = new(static.Server)();
+//var file = new(static.Server)();
+var file = new static.Server('./Pages');
 var app = https.createServer(options,function (req, res) {
 	file.serve(req, res);
 }).listen(1234);
@@ -25,7 +26,7 @@ io.sockets.on('connection', function (socket) {
 		log('Got message: ', message);
 		socket.broadcast.emit('message', message); // should be room only
 	});
-
+/*
 	socket.on('create or join', function (room) {
 		var numClients = io.sockets.clients(room).length;
 
@@ -50,4 +51,5 @@ io.sockets.on('connection', function (socket) {
 		socket.emit('emit(): client ' + socket.id + ' joined room ' + room);
 		socket.broadcast.emit('broadcast(): client ' + socket.id + ' joined room ' + room);
 	});
+	*/
 });
