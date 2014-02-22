@@ -11,6 +11,7 @@
 		<!--
 		<script src="client.js"></script>
 		-->
+		
 		<applet code="JsToJava.class" 
         name="JsToJava" 
         mayscript 
@@ -20,6 +21,7 @@
 
 
 <script src="/socket.io/socket.io.js"></script>
+
 
 <script>
 var PeerConnection = window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
@@ -33,9 +35,11 @@ var pc; // PeerConnection
                 mandatory: {
                        chromeMediaSource: 'screen',
 					    maxWidth: 1280,
-            maxHeight: 720,
-            minWidth: 1280,
-            minHeight: 720
+						maxHeight: 720,
+						minWidth: 1280,
+						minHeight: 720/*,
+						minFrameRate: 30,
+						maxFrameRate: 60*/
                 },
                 optional: []
             };
@@ -98,6 +102,7 @@ var socket = io.connect('', {port: 1234});
 var socket2 = io.connect('', {port: 8080});
 //var socket2 = io.connect('http://192.168.1.35:8080');
 
+
 	socket2.on('connect', function () {
 		socket2.on('message', function (msg) {
 			// Добавим информацию в апплет
@@ -106,6 +111,7 @@ var socket2 = io.connect('', {port: 8080});
 		});
 		
 	});
+	
 
 function sendMessage(message){
   socket.emit('message', message);
@@ -123,6 +129,7 @@ socket.on('message', function (message){
     var candidate = new IceCandidate({sdpMLineIndex: message.label, candidate: message.candidate});
     pc.addIceCandidate(candidate);
   }
+  //alert('тест приема  '+ message);
 });
 
 </script>

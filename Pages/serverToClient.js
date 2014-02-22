@@ -135,10 +135,25 @@ var keyMap =
 	}
 	socket.on('connect', function () {
 	
+	
+	
+	     var x = window.event.PageX;
+		 var y = window.event.PageY;
+		 var delay =100;
+		 
+		 var id = setInterval(mousePost, delay)
+		 
+		 function mousePost() {
+			 if ((x!=window.event.PageX)||(y != window.event.PageY)){
+				socket.send(escape('mouseMove'+':'+e.pageX+':'+e.pageY));
+			  }
+		}
+
+	/*
 		document.onmousemove = function(e) {
 		  socket.send(escape('mouseMove'+':'+e.pageX+':'+e.pageY));
 		}
-		
+		*/
 		document.onmousedown = function(e) {
 		  socket.send(escape('onMouseDown'+':'+e.button));
 		}

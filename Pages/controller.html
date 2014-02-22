@@ -4,15 +4,21 @@
   <meta charset="UTF-8">
   <style type="text/css">
     html { height: 100%; }
-    body { height: 100%; margin: 0; background: #111; text-align: left; }
-    #remoteVideo { position: absolute; left: 0% ; height: 100%; width: 100%; background: #000; }
+    body { height: 100%; margin: 0; background: red; text-align: left; }
+    #remoteVideo { position: absolute; left: 0% ; height: 100%; width: 100%; background: #255;}
     #callButton { position: absolute; display: none; left: 50%; font-size: 2em; bottom: 5%; border-radius: 1em; }
+  #ex2 {cursor: url('empty.cur'), default;}
   </style>
 </head>
 
-<script src="/socket.io/socket.io.js"></script>
+	      <div id="fps">0</div>
 
+
+<script src="/socket.io/socket.io.js"></script>
+<div id="ex2">
 <video id="remoteVideo" autoplay></video>
+</div>
+
 <button id="callButton" onclick="createOffer()">start</button>
 
 
@@ -83,10 +89,92 @@ function gotRemoteStream(event){
 }
 
 
+
+
+
+
+
+
+
+
+
+ var video = document.querySelector("video");
+ 
+    function calculateStats() {
+       if (video.readyState <= HTMLMediaElement.HAVE_CURRENT_DATA ||
+            video.paused || video.ended)
+        return;
+       // Not all test files have same duration, so to make the tests run shorter
+      // we need a time limit.
+       // From aggregated data, 5 seconds is enough time to get reliable results.
+	   /*
+      if (video.currentTime > 5) {
+        video.currentTime = video.duration;
+      }
+	  */
+
+      currentTime = new Date().getTime();
+      deltaTime = (currentTime - startTime) / 1000;
+      startTime = currentTime;
+ 
+      // Calculate decoded frames per sec.
+      var fps = (video.webkitDecodedFrameCount - decodedFrames) / deltaTime;
+      decodedFrames = video.webkitDecodedFrameCount;
+      //decodedFPS.push(fps);
+	  decodedFPS=fps;
+
+        // Calculate dropped frames per sec.
+     fps = (video.webkitDroppedFrameCount - droppedFrames) / deltaTime;
+      droppedFrames = video.webkitDroppedFrameCount;
+      //droppedFPS.push(fps);
+	  droppedFPS=fps;
+
+		       var f = document.getElementById("fps");
+       f.innerHTML =decodedFPS; 
+     }
+ 
+    video.addEventListener("playing", function(event) {
+       decodedFrames = 0;
+       droppedFrames = 0;
+     decodedFPS = 0;
+      droppedFPS = 0;
+       startTime = new Date().getTime();
+      intID = window.setInterval(calculateStats, 1000);
+    });
+ 
+     video.addEventListener("error", function() { endTest(false); }, false);
+    video.addEventListener("ended", function() { endTest(true); }, false);
+ 
+    function endTest(successFlag) {
+	alert('вылет');
+       window.clearInterval(intID);
+      // Notify PyAuto that we've completed the test run.
+       if (window.domAutomationController)
+         window.domAutomationController.send(successFlag);
+     }
+
+
+
+
+
+
+
+
+
+
+
 ////////////////////////////////////////////////
 // Socket.io
 
+
 var socket = io.connect('', {port: 1234});
+/*
+	if (navigator.userAgent.toLowerCase().indexOf('chrome') != -1) {
+		socket = io.connect('http://localhost:8080', {'transports': ['xhr-polling']});
+	} else {
+		socket = io.connect('http://localhost:8080');
+	}
+	*/
 var socket2 = io.connect('', {port: 8080});
 
 var keyMap =
@@ -217,14 +305,90 @@ var keyMap =
 
 	socket2.on('connect', function () {
 	
+	
+	var Pos;
+	var OldPos;
+	var TimerId;
+		
 		document.onmousemove = function(e) {
-		  socket2.send(escape('mouseMove'+':'+e.pageX+':'+e.pageY));
+					  Pos = {
+				x: e.pageX,
+				y: e.pageY
+			};
 		}
+		
+		/*
+		 var delay =100;
+		 
+		 var id = setInterval(mousePost, delay)
+		 
+		 function mousePost() {
+			 if ((Pos)&&(Pos!=OldPos)){
+			 OldPos=Pos;
+			 	  var   x = Pos.x;
+					var  y = Pos.y;
+				socket2.send(escape('mouseMove'+':'+x+':'+y));
+			  }
+		}
+		*/
+		
+		
+		/// таймеров будет 2 шт первый определит когда подключат видео и врубит функцию с вторым таймером
+		// второй рабочий - отсылает события с положением мыши
+		
+		 var videoTimerId = setInterval(CheckFPS, 1000); //проверяем каждую секунду пошло или нет видео
+		 
+		 function CheckFPS()
+		 {
+			 if (decodedFPS) 
+			 {
+			 startMouseTrak()
+			 }
+		 }
+		
+		
+	function startMouseTrak()
+	{
+		var delay = 100;
+		 
+		 var timerId = setTimeout(mousePost, delay);
+		 
+		 function mousePost() {
+		 if (decodedFPS>4){
+				 if ((Pos)&&(Pos!=OldPos)){
+				 OldPos=Pos;
+					  var   x = Pos.x;
+						var  y = Pos.y;
+					socket2.send(escape('mouseMove'+':'+x+':'+y));
+					clearTimeout(timerId);
+					
+							if (decodedFPS <6) {
+							  delay = 800;
+							} else if (decodedFPS <8) {
+							  delay = 500;
+							} else if (decodedFPS <12) {
+							   delay = 300;
+							} else { //>12
+							  delay = 100;
+							}
+					timerId=setTimeout(mousePost, delay)
+				  }
+			  }
+		}
+	}
+		
+		
 		
 		document.onmousedown = function(e) {
 		  socket2.send(escape('onMouseDown'+':'+e.button));
 		}
-		
+	
+		/*
+				document.onmousemove = function(e) {
+		  socket.send(escape('mouseMove'+':'+e.pageX+':'+e.pageY));
+		  
+		}
+		*/
 		document.onmouseup = function(e) {
 		  socket2.send(escape('onMouseUp'+':'+e.button));
 		}

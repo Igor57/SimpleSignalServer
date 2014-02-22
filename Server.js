@@ -26,6 +26,7 @@ io2.sockets.on('connection', function (socket) {
 		socket.broadcast.json.send({'event': 'messageReceived', 'text': msg})
 	});
 	});
+	
 
 io.sockets.on('connection', function (socket) {
 	function log() {
